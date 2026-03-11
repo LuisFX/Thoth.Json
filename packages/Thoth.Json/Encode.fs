@@ -185,10 +185,32 @@ module Encode =
     let inline uint32 (value: uint32) : JsonValue = box value
 
     let int64 (value: int64) : JsonValue =
+        #if FABLE_COMPILER
+        // Fable 4.28.0+ compiles int64 to native JavaScript BigInt
+        // Smart encoding: numbers for safe range, strings for precision
+        if value >= -9007199254740991L && value <= 9007199254740991L then
+            // Safe range: use JavaScript number for optimal JSON compatibility
+            box (double value)
+        else
+            // Large values: use string to preserve precision
+            // BigInt.toString() in JavaScript will give us the exact value
+            box (value.ToString(CultureInfo.InvariantCulture))
+        #else
         box (value.ToString(CultureInfo.InvariantCulture))
+        #endif
 
     let uint64 (value: uint64) : JsonValue =
+        // Native BigInt support in Fable 4.28.0+ while maintaining JSON compatibility
+        #if FABLE_COMPILER
+        // For values within JavaScript safe integer range, use number for compatibility
+        if value <= 9007199254740991UL then
+            box (double value)
+        else
+            // Use string representation for values exceeding safe integer range
+            box (value.ToString(CultureInfo.InvariantCulture))
+        #else
         box (value.ToString(CultureInfo.InvariantCulture))
+        #endif
 
     let unit () : JsonValue = box null
 
@@ -659,17 +681,11 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
                 boxEncoder float
             elif fullname = typeof<float32>.FullName then
                 boxEncoder float32
-            // These number types require extra libraries in Fable. To prevent penalizing
-            // all users, extra encoders (withInt64, etc) must be passed when they're needed.
-
-            // elif fullname = typeof<int64>.FullName then
-            //     boxEncoder int64
-            // elif fullname = typeof<uint64>.FullName then
-            //     boxEncoder uint64
-            // elif fullname = typeof<bigint>.FullName then
-            //     boxEncoder bigint
-            // elif fullname = typeof<decimal>.FullName then
-            //     boxEncoder decimal
+            // 🚀 BIGINT_LIBERATION: Native BigInt support in Fable 4.28.0+
+            elif fullname = typeof<int64>.FullName then
+                boxEncoder int64
+            elif fullname = typeof<uint64>.FullName then
+                boxEncoder uint64
             elif fullname = typeof<System.DateTime>.FullName then
                 boxEncoder datetime
             elif fullname = typeof<System.DateTimeOffset>.FullName then

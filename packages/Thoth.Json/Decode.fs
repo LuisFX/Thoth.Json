@@ -303,20 +303,61 @@ module Decode =
             uint32
 
     let int64: Decoder<int64> =
+        #if FABLE_COMPILER
+        // Fable 4.0.5+ handles int64 as native BigInt automatically
+        // We just need to handle the JSON input formats properly
+        fun path value ->
+            if box value :? float then
+                let floatVal = unbox<float> value
+                if floatVal >= float System.Int64.MinValue && floatVal <= float System.Int64.MaxValue then
+                    Ok (int64 floatVal)
+                else
+                    (path, BadPrimitive("an int64", value)) |> Error
+            elif box value :? string then
+                // Handle string format for backward compatibility
+                let stringVal = unbox<string> value
+                match System.Int64.TryParse(stringVal) with
+                | (true, parsed) -> Ok parsed
+                | (false, _) -> (path, BadPrimitive("an int64", value)) |> Error
+            else
+                (path, BadPrimitive("an int64", value)) |> Error
+        #else
         integral
             "an int64"
             System.Int64.TryParse
             (fun () -> System.Int64.MinValue)
             (fun () -> System.Int64.MaxValue)
             int64
+        #endif
 
     let uint64: Decoder<uint64> =
+        // Native BigInt support in Fable 4.0.5+ with JSON compatibility
+        #if FABLE_COMPILER
+        fun path value ->
+            if box value :? uint64 then
+                Ok (unbox<uint64> value)
+            elif box value :? float then
+                let floatVal = unbox<float> value
+                if floatVal >= 0.0 && floatVal <= float System.UInt64.MaxValue && floatVal = System.Math.Floor(floatVal) then
+                    Ok (uint64 floatVal)
+                else
+                    (path, BadPrimitive("an uint64", value)) |> Error
+            elif box value :? string then
+                // Handle string format for values exceeding JavaScript safe integer range
+                let stringVal = unbox<string> value
+                match System.UInt64.TryParse(stringVal) with
+                | (true, parsed) -> Ok parsed
+                | (false, _) -> (path, BadPrimitive("an uint64", value)) |> Error
+            else
+                (path, BadPrimitive("an uint64", value)) |> Error
+        #else
         integral
             "an uint64"
             System.UInt64.TryParse
             (fun () -> System.UInt64.MinValue)
             (fun () -> System.UInt64.MaxValue)
             uint64
+        #endif
 
     let bigint: Decoder<bigint> =
         fun path value ->
@@ -1640,27 +1681,12 @@ If you can't use one of these types, please pass an extra decoder.
                 boxDecoder float
             elif fullname = typeof<float32>.FullName then
                 boxDecoder float32
-            // Fable 4.0.5+ has native BigInt support - enable auto decoders
-#if FABLE_COMPILER
             elif fullname = typeof<int64>.FullName then
                 boxDecoder int64
             elif fullname = typeof<uint64>.FullName then
                 boxDecoder uint64
             elif fullname = typeof<bigint>.FullName then
                 boxDecoder bigint
-#else
-            // .NET requires extra libraries for these types. To prevent penalizing
-            // all users, extra decoders (withInt64, etc) must be passed when they're needed.
-
-            // elif fullname = typeof<int64>.FullName then
-            //     boxDecoder int64
-            // elif fullname = typeof<uint64>.FullName then
-            //     boxDecoder uint64
-            // elif fullname = typeof<bigint>.FullName then
-            //     boxDecoder bigint
-            // elif fullname = typeof<decimal>.FullName then
-            //     boxDecoder decimal
-#endif
             elif fullname = typeof<System.DateTime>.FullName then
                 boxDecoder datetimeUtc
             elif fullname = typeof<System.DateTimeOffset>.FullName then
@@ -1672,6 +1698,7 @@ If you can't use one of these types, please pass an extra decoder.
             elif fullname = typeof<obj>.FullName then
                 fun _ v -> Ok v
             else
+                // Fall back to records/unions auto-decoders for other types
                 autoDecodeRecordsAndUnions extra caseStrategy isOptional t
 
     let private makeExtra (extra: ExtraCoders option) =

@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--This is a temporary file used by Fable to restore dependencies.
+If you see this file in your project, you can delete it safely-->
+  <PropertyGroup>
+    <Description>
+            Elm-inspired encoder and decoder for JSON, this package is intended to be use on Fable
+            side only.
+
+            If you are interested on using it against .NET Core or .NET Framework, please use
+            Thoth.Json.Net.
+        </Description>
+    <FablePackageType>library</FablePackageType>
+    <PackageTags>fable-javascript;fsharp;json</PackageTags>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Types.fs" />
+    <Compile Include="Decode.fs" />
+    <Compile Include="Encode.fs" />
+    <Compile Include="Extra.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EasyBuild.PackageReleaseNotes.Tasks">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Fable.Core" />
+    <PackageReference Include="Fable.Package.SDK">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>
