@@ -1640,17 +1640,15 @@ If you can't use one of these types, please pass an extra decoder.
                 boxDecoder float
             elif fullname = typeof<float32>.FullName then
                 boxDecoder float32
-            // These number types require extra libraries in Fable. To prevent penalizing
-            // all users, extra decoders (withInt64, etc) must be passed when they're needed.
-
-            // elif fullname = typeof<int64>.FullName then
-            //     boxDecoder int64
-            // elif fullname = typeof<uint64>.FullName then
-            //     boxDecoder uint64
-            // elif fullname = typeof<bigint>.FullName then
-            //     boxDecoder bigint
-            // elif fullname = typeof<decimal>.FullName then
-            //     boxDecoder decimal
+            // Fable 4.28.0+ has native BigInt — no extra libraries needed.
+            elif fullname = typeof<int64>.FullName then
+                boxDecoder int64
+            elif fullname = typeof<uint64>.FullName then
+                boxDecoder uint64
+            elif fullname = typeof<bigint>.FullName then
+                boxDecoder bigint
+            elif fullname = typeof<decimal>.FullName then
+                boxDecoder decimal
             elif fullname = typeof<System.DateTime>.FullName then
                 boxDecoder datetimeUtc
             elif fullname = typeof<System.DateTimeOffset>.FullName then
